@@ -1,0 +1,235 @@
+{% extends "core/dashboard_base.html" %}
+
+{% block dashboard_content %}
+<div class="dashboard-content">
+    <section class="hero-panel mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="profile-ring">
+                        {% if profile and profile.profile_picture %}
+                            <img src="{% url 'profile_file' 'profile_picture' %}" alt="Student profile picture">
+                        {% else %}
+                            <span>{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="eyebrow mb-1">Welcome back</p>
+                        <h2 class="mb-0">{{ profile.full_name|default:request.user.get_full_name|default:request.user.username }}</h2>
+                    </div>
+                </div>
+                <p class="hero-copy mb-0">
+                    Your placement readiness is tracking well. Keep building momentum with a consistent next-step routine.
+                </p>
+            </div>
+            <div class="col-lg-4">
+                <div class="score-badge text-center">
+                    <span class="score-badge-label">Overall preparation score</span>
+                    <div class="score-badge-value">{{ overall_preparation_score|floatformat:1 }}%</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats-grid mb-4">
+        <div class="row g-3">
+            <div class="col-6 col-xl-3">
+                {% include "core/partials/stat_card.html" with label="Overall score" value=overall_preparation_score|floatformat:1|add:"%" icon="bi bi-trophy-fill" meta="Based on recent activity" %}
+            </div>
+            <div class="col-6 col-xl-3">
+                {% include "core/partials/stat_card.html" with label="Questions attempted" value=questions_attempted icon="bi bi-question-circle-fill" meta="Across all practice topics" %}
+            </div>
+            <div class="col-6 col-xl-3">
+                {% include "core/partials/stat_card.html" with label="Questions solved" value=questions_solved icon="bi bi-check-circle-fill" meta="Correct answers" %}
+            </div>
+            <div class="col-6 col-xl-3">
+                {% include "core/partials/stat_card.html" with label="Current streak" value=current_streak|add:" days" icon="bi bi-fire" meta="Consecutive active days" %}
+            </div>
+        </div>
+    </section>
+
+    {% if is_empty %}
+        <section class="mb-4">
+            {% include "core/partials/empty_state.html" with title="Your dashboard is ready for the first milestone" description="Start with one aptitude question, one coding challenge, or a mock test to unlock progress insights and recommendations." %}
+        </section>
+    {% else %}
+        <section class="row g-4 mb-4">
+            <div class="col-xl-8">
+                <div class="panel-card h-100">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow mb-1">Progress overview</p>
+                            <h3 class="panel-title mb-0">Strength by topic</h3>
+                        </div>
+                        <a href="{% url 'practice' %}" class="small-link">Practice more</a>
+                    </div>
+
+                    {% if topic_progress %}
+                        <div class="progress-list">
+                            {% for item in topic_progress %}
+                                {% include "core/partials/progress_card.html" with item=item %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {% include "core/partials/empty_state.html" with title="No topic progress yet" description="Your practice data will appear here as soon as you attempt questions." %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="panel-card h-100">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow mb-1">Core coverage</p>
+                            <h3 class="panel-title mb-0">Skill snapshot</h3>
+                        </div>
+                    </div>
+
+                    <div class="subject-stack">
+                        {% for subject in subject_scores %}
+                            <div class="subject-row">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span>{{ subject.name }}</span>
+                                    <strong>{{ subject.value|floatformat:0 }}%</strong>
+                                </div>
+                                <div class="mini-progress">
+                                    <span style="width: {{ subject.value }}%;"></span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="panel-card h-100">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow mb-1">Performance details</p>
+                            <h3 class="panel-title mb-0">Accuracy and readiness</h3>
+                        </div>
+                    </div>
+                    <div class="metric-list">
+                        <div class="metric-item">
+                            <span>Accuracy</span>
+                            <strong>{{ accuracy|floatformat:1 }}%</strong>
+                        </div>
+                        <div class="metric-item">
+                            <span>Tests completed</span>
+                            <strong>{{ tests_completed }}</strong>
+                        </div>
+                        <div class="metric-item">
+                            <span>Coding problems solved</span>
+                            <strong>{{ coding_problems_solved }} / {{ coding_problems_attempted }}</strong>
+                        </div>
+                        <div class="metric-item">
+                            <span>Coding success rate</span>
+                            <strong>{{ coding_success_rate|floatformat:1 }}%</strong>
+                        </div>
+                        <div class="metric-item">
+                            <span>Strongest topic</span>
+                            <strong>{% if strongest_topic %}{{ strongest_topic.topic }}{% else %}N/A{% endif %}</strong>
+                        </div>
+                        <div class="metric-item">
+                            <span>Weakest topic</span>
+                            <strong>{% if weakest_topic %}{{ weakest_topic.topic }}{% else %}N/A{% endif %}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="panel-card h-100">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow mb-1">Priority actions</p>
+                            <h3 class="panel-title mb-0">Recommended actions</h3>
+                        </div>
+                    </div>
+                    {% if recommended_actions %}
+                        <div class="action-list">
+                            {% for item in recommended_actions %}
+                                <a href="{{ item.url }}" class="action-item">
+                                    <div class="action-meta">
+                                        <span class="action-tag action-tag-{{ item.priority|lower }}">{{ item.priority }}</span>
+                                    </div>
+                                    <div>
+                                        <h6>{{ item.title }}</h6>
+                                        <p>{{ item.description }}</p>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {% include "core/partials/empty_state.html" with title="No recommendations yet" description="Keep learning and your next best action will appear here." %}
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="row g-4">
+            <div class="col-lg-7">
+                <div class="panel-card h-100">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow mb-1">Activity feed</p>
+                            <h3 class="panel-title mb-0">Recent activity</h3>
+                        </div>
+                    </div>
+                    {% if recent_activity %}
+                        <div class="activity-list">
+                            {% for item in recent_activity %}
+                                <div class="activity-item">
+                                    <div class="activity-dot"></div>
+                                    <div>
+                                        <h6>{{ item.title }}</h6>
+                                        <p>{{ item.detail }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {% include "core/partials/empty_state.html" with title="No recent activity" description="Your latest practice and learning actions will show up here." %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="panel-card h-100">
+                    <div class="panel-header">
+                        <div>
+                            <p class="eyebrow mb-1">Student summary</p>
+                            <h3 class="panel-title mb-0">Profile snapshot</h3>
+                        </div>
+                        <a href="{% url 'profile' %}" class="small-link">View profile</a>
+                    </div>
+                    <div class="profile-summary">
+                        <div class="summary-row">
+                            <span>College</span>
+                            <strong>{{ profile.college|default:"Not added yet" }}</strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>Degree</span>
+                            <strong>{{ profile.degree|default:"Not added yet" }}</strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>Department</span>
+                            <strong>{{ profile.department|default:"Not added yet" }}</strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>Preparation level</span>
+                            <strong>{{ profile.current_preparation_level|default:"Intermediate" }}</strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>Preferred role</span>
+                            <strong>{{ profile.preferred_job_role|default:"Software Engineer" }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

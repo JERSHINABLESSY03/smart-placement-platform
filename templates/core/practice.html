@@ -1,0 +1,55 @@
+{% extends "core/base.html" %}
+{% block title %}Aptitude practice{% endblock %}
+{% block content %}
+<section class="aptitude-hero mb-4">
+    <div class="aptitude-hero-copy">
+        <span class="aptitude-eyebrow">Practice center</span>
+        <h1>Sharpen your aptitude, one question at a time.</h1>
+        <p>Choose a learning track, focus on a topic, and get immediate feedback with explanations and performance tracking.</p>
+    </div>
+    <div class="aptitude-overview">
+        <div><strong>{{ total_attempts }}</strong><span>Attempts</span></div>
+        <div><strong>{{ total_correct }}</strong><span>Correct</span></div>
+        <div><strong>{{ overall_accuracy }}%</strong><span>Accuracy</span></div>
+    </div>
+</section>
+
+<div class="aptitude-section-heading">
+    <div>
+        <span class="aptitude-eyebrow">Choose your track</span>
+        <h2>Practice categories</h2>
+    </div>
+    <span class="aptitude-muted">Your attempts and accuracy are saved to your account.</span>
+</div>
+
+<div class="row g-4">
+    {% for category in categories %}
+        <div class="col-md-6 col-xl-4">
+            <article class="aptitude-category-card h-100">
+                <div class="aptitude-category-icon category-icon-{{ forloop.counter }}">
+                    {% if "Quantitative" in category.name %}<i class="bi bi-calculator"></i>
+                    {% elif "Logical" in category.name %}<i class="bi bi-puzzle"></i>
+                    {% else %}<i class="bi bi-chat-square-text"></i>{% endif %}
+                </div>
+                <h3>{{ category.name }}</h3>
+                <p>{{ category.description|default:"Build confidence through topic-focused practice and instant feedback." }}</p>
+                <div class="category-stats">
+                    <span><strong>{{ category.topic_count }}</strong> topics</span>
+                    <span><strong>{{ category.question_count }}</strong> questions</span>
+                </div>
+                <a class="btn btn-primary aptitude-button" href="{% url 'aptitude_category' category_slug=category.slug %}">
+                    Explore category <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </article>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="aptitude-empty">
+                <div class="aptitude-category-icon"><i class="bi bi-journal-plus"></i></div>
+                <h3>Practice tracks are being set up</h3>
+                <p>Ask an administrator to create active categories and topics. Questions are added securely through Django admin.</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

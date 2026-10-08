@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+{% block body_class %}dashboard-body{% endblock %}
+
+{% block body %}
+<div class="dashboard-shell">
+    {% include "core/partials/top_nav.html" %}
+
+    <div class="dashboard-layout container-fluid px-3 px-lg-4">
+        <aside class="dashboard-sidebar" id="dashboardSidebar">
+            {% include "core/partials/sidebar.html" %}
+        </aside>
+
+        <main class="dashboard-main">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show dashboard-alert" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% block dashboard_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleButton = document.querySelector('.dashboard-mobile-toggle');
+        const sidebar = document.getElementById('dashboardSidebar');
+
+        if (toggleButton && sidebar) {
+            toggleButton.addEventListener('click', function () {
+                sidebar.classList.toggle('is-collapsed');
+            });
+        }
+    });
+</script>
+{% endblock %}

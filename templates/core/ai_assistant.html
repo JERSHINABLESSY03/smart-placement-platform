@@ -1,0 +1,82 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}AI Placement Tutor{% endblock %}
+{% block content %}
+<section class="ai-page" id="aiApp"
+         data-conversations-url="{{ conversation_api_url }}"
+         data-messages-url-template="{{ messages_api_url }}"
+         data-delete-url-template="{{ delete_api_url }}">
+    <aside class="ai-history-panel">
+        <div class="ai-brand">
+            <div class="ai-brand-icon"><i class="bi bi-stars"></i></div>
+            <div><span class="ai-eyebrow">Placement prep</span><h1>AI Tutor</h1></div>
+        </div>
+        <button class="ai-new-chat" id="newChatButton" type="button">
+            <i class="bi bi-plus-lg"></i><span>New conversation</span>
+        </button>
+        <div class="ai-history-heading"><span>RECENT CONVERSATIONS</span><span class="ai-history-count" id="historyCount">0</span></div>
+        <nav class="ai-conversation-list" id="conversationList" aria-label="Conversation history"></nav>
+        <p class="ai-private-note"><i class="bi bi-lock"></i> Your conversations are private to your account.</p>
+    </aside>
+
+    <section class="ai-chat-panel" aria-label="AI tutor chat">
+        <header class="ai-chat-header">
+            <div class="ai-online-avatar"><i class="bi bi-stars"></i><span></span></div>
+            <div class="ai-header-copy">
+                <strong>Placement Prep Tutor</strong>
+                <span><i class="bi bi-circle-fill"></i> Ready to help you learn</span>
+            </div>
+            <button class="ai-clear-button" id="clearChatButton" type="button" disabled>
+                <i class="bi bi-trash3"></i><span>Clear conversation</span>
+            </button>
+        </header>
+
+        <div class="ai-message-scroll" id="messageScroll">
+            <div class="ai-welcome" id="welcomePanel">
+                <div class="ai-welcome-mark"><i class="bi bi-stars"></i></div>
+                <span class="ai-eyebrow">Your personal study companion</span>
+                <h2>What would you like to work on?</h2>
+                <p>Ask for clear explanations, guided hints, original practice, or a focused study recommendation.</p>
+                <div class="ai-suggestion-grid">
+                    <button type="button" class="ai-suggestion" data-mode="dbms" data-prompt="Explain normalization in DBMS with a practical example.">
+                        <i class="bi bi-diagram-3"></i><span><strong>Explain a concept</strong><small>Make DBMS topics click</small></span><i class="bi bi-arrow-up-right"></i>
+                    </button>
+                    <button type="button" class="ai-suggestion" data-mode="hint" data-prompt="Give me a first hint for solving a two-sum problem without revealing the full solution.">
+                        <i class="bi bi-lightbulb"></i><span><strong>Get a helpful hint</strong><small>Work through a challenge</small></span><i class="bi bi-arrow-up-right"></i>
+                    </button>
+                    <button type="button" class="ai-suggestion" data-mode="practice" data-prompt="Create three medium-level SQL interview practice questions with answers and explanations.">
+                        <i class="bi bi-patch-question"></i><span><strong>Practice a skill</strong><small>Generate interview questions</small></span><i class="bi bi-arrow-up-right"></i>
+                    </button>
+                    <button type="button" class="ai-suggestion" data-mode="recommendation" data-prompt="Help me plan a one-week placement preparation schedule.">
+                        <i class="bi bi-calendar2-week"></i><span><strong>Plan your next week</strong><small>Build a practical study plan</small></span><i class="bi bi-arrow-up-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="ai-message-list" id="messageList" aria-live="polite"></div>
+            <div class="ai-error-banner" id="aiError" role="alert" hidden></div>
+        </div>
+
+        <div class="ai-composer-wrap">
+            <form class="ai-composer" id="chatForm">
+                {% csrf_token %}
+                <label class="visually-hidden" for="{{ form.mode.id_for_label }}">Tutor mode</label>
+                {{ form.mode }}
+                <label class="visually-hidden" for="{{ form.prompt.id_for_label }}">Message</label>
+                {{ form.prompt }}
+                <button type="submit" class="ai-send-button" id="sendButton" aria-label="Send message">
+                    <i class="bi bi-arrow-up"></i>
+                </button>
+            </form>
+            <div class="ai-composer-footer">
+                <span><i class="bi bi-shield-check"></i> AI can make mistakes. Verify important details.</span>
+                <span id="characterCount">0 / 6000</span>
+            </div>
+            <div class="ai-loading" id="loadingIndicator" hidden><span></span><span></span><span></span><small>Tutor is thinking</small></div>
+        </div>
+    </section>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/ai_assistant.js' %}" defer></script>
+{% endblock %}

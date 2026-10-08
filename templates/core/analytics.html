@@ -1,0 +1,223 @@
+{% extends "core/base.html" %}
+{% block title %}Performance analytics{% endblock %}
+{% block content %}
+<section class="analytics-hero">
+    <div>
+        <span class="analytics-eyebrow">Your private performance report</span>
+        <h1>Progress you can measure.</h1>
+        <p>Insights are calculated from your aptitude practice, completed assessments, and coding activity.</p>
+    </div>
+    <div class="analytics-score">
+        <span>Preparation score</span>
+        <strong>{{ analytics.overall_preparation_score }}<small>%</small></strong>
+        <small>Average across activity areas with recorded data</small>
+    </div>
+</section>
+
+<section class="analytics-kpi-grid" aria-label="Performance summary">
+    <article class="analytics-kpi">
+        <div class="analytics-kpi-icon icon-blue"><i class="bi bi-bullseye"></i></div>
+        <span>Accuracy</span>
+        <strong>{{ analytics.accuracy }}%</strong>
+        <small>Correct / answered questions</small>
+    </article>
+    <article class="analytics-kpi">
+        <div class="analytics-kpi-icon icon-violet"><i class="bi bi-question-circle"></i></div>
+        <span>Questions attempted</span>
+        <strong>{{ analytics.questions_attempted }}</strong>
+        <small>Practice and completed tests</small>
+    </article>
+    <article class="analytics-kpi">
+        <div class="analytics-kpi-icon icon-green"><i class="bi bi-check2-circle"></i></div>
+        <span>Questions solved</span>
+        <strong>{{ analytics.questions_solved }}</strong>
+        <small>Correct submitted answers</small>
+    </article>
+    <article class="analytics-kpi">
+        <div class="analytics-kpi-icon icon-amber"><i class="bi bi-clipboard-check"></i></div>
+        <span>Mock tests completed</span>
+        <strong>{{ analytics.mock_tests_completed }}</strong>
+        <small>Submitted or expired assessments</small>
+    </article>
+    <article class="analytics-kpi">
+        <div class="analytics-kpi-icon icon-cyan"><i class="bi bi-code-slash"></i></div>
+        <span>Coding problems solved</span>
+        <strong>{{ analytics.coding_problems_solved }}</strong>
+        <small>{{ analytics.coding_success_rate }}% success across {{ analytics.coding_problems_attempted }} unique problems</small>
+    </article>
+</section>
+
+<section class="analytics-chart-grid">
+    <article class="analytics-panel weekly-chart-panel">
+        <div class="analytics-panel-heading">
+            <div><span class="analytics-eyebrow">Last seven days</span><h2>Weekly progress</h2></div>
+            <span class="analytics-chart-legend"><i></i> Questions attempted</span>
+        </div>
+        <div class="analytics-chart-wrap"><canvas id="weeklyProgressChart" aria-label="Weekly question attempts and correct answers" role="img"></canvas></div>
+        <p class="analytics-empty-chart" id="weeklyEmpty" hidden>No practice or completed test activity in the last seven days.</p>
+    </article>
+    <article class="analytics-panel category-chart-panel">
+        <div class="analytics-panel-heading">
+            <div><span class="analytics-eyebrow">Accuracy by category</span><h2>Category performance</h2></div>
+        </div>
+        <div class="analytics-chart-wrap"><canvas id="categoryPerformanceChart" aria-label="Category-wise accuracy" role="img"></canvas></div>
+        <p class="analytics-empty-chart" id="categoryEmpty" hidden>No category performance data yet. Answer practice questions or complete a test.</p>
+    </article>
+</section>
+
+<section class="analytics-lower-grid">
+    <article class="analytics-panel">
+        <div class="analytics-panel-heading">
+            <div><span class="analytics-eyebrow">Topic mastery</span><h2>Topic-wise accuracy</h2></div>
+        </div>
+        {% if analytics.topic_performance %}
+            <div class="topic-accuracy-list">
+                {% for item in analytics.topic_performance %}
+                    <div class="topic-accuracy-row">
+                        <div class="topic-accuracy-copy">
+                            <div><strong>{{ item.name }}</strong><span>{{ item.correct }}/{{ item.attempted }} correct</span></div>
+                            <strong>{{ item.accuracy }}%</strong>
+                        </div>
+                        <div class="analytics-progress-track"><span style="width: {{ item.accuracy }}%;"></span></div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="analytics-empty-state"><i class="bi bi-bar-chart"></i><p>Topic accuracy will appear after you answer practice or assessment questions.</p></div>
+        {% endif %}
+    </article>
+
+    <article class="analytics-panel">
+        <div class="analytics-panel-heading">
+            <div><span class="analytics-eyebrow">Personalized insights</span><h2>Strengths & focus areas</h2></div>
+        </div>
+        <div class="strength-block">
+            <h3><i class="bi bi-stars"></i> Strong topics</h3>
+            {% for item in analytics.strong_topics %}
+                <div class="insight-topic"><span>{{ item.name }}</span><strong>{{ item.accuracy }}%</strong></div>
+            {% empty %}
+                <p class="analytics-muted">Answer questions to identify your strongest topics.</p>
+            {% endfor %}
+        </div>
+        <div class="weakness-block">
+            <h3><i class="bi bi-lightning-charge"></i> Topics to improve</h3>
+            {% for item in analytics.weak_topics %}
+                <div class="insight-topic"><span>{{ item.name }}</span><strong>{{ item.accuracy }}%</strong></div>
+            {% empty %}
+                <p class="analytics-muted">More practice will reveal where to focus next.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="analytics-panel recent-scores-panel">
+    <div class="analytics-panel-heading">
+        <div><span class="analytics-eyebrow">Assessment history</span><h2>Recent test scores</h2></div>
+        <a href="{% url 'mock_tests' %}" class="analytics-link">Go to assessments <i class="bi bi-arrow-right"></i></a>
+    </div>
+    {% if analytics.recent_test_scores %}
+        <div class="recent-score-table-wrap">
+            <table class="recent-score-table">
+                <thead><tr><th>Assessment</th><th>Score</th><th>Performance</th><th>Status</th><th>Completed</th></tr></thead>
+                <tbody>
+                    {% for item in analytics.recent_test_scores %}
+                        <tr>
+                            <td><strong>{{ item.test }}</strong></td>
+                            <td>{% if item.total_marks %}{{ item.score }}/{{ item.total_marks }}{% else %}{{ item.score }}{% endif %}</td>
+                            <td>{% if item.percentage is not None %}{{ item.percentage }}%{% else %}Score recorded{% endif %}</td>
+                            <td><span class="analytics-status">{{ item.status }}</span></td>
+                            <td>{{ item.submitted_at|date:"M j, Y H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="analytics-empty-state"><i class="bi bi-clipboard-data"></i><p>Your completed assessment scores will appear here.</p></div>
+    {% endif %}
+</section>
+
+{{ analytics.weekly_progress|json_script:"weekly-progress-data" }}
+{{ analytics.category_performance|json_script:"category-performance-data" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(() => {
+    const weekly = JSON.parse(document.getElementById("weekly-progress-data").textContent);
+    const categories = JSON.parse(document.getElementById("category-performance-data").textContent);
+    const weeklyHasData = weekly.some(item => item.attempted > 0 || item.tests > 0);
+    if (!weeklyHasData) {
+        document.getElementById("weeklyEmpty").hidden = false;
+        document.getElementById("weeklyProgressChart").hidden = true;
+    } else {
+        new Chart(document.getElementById("weeklyProgressChart"), {
+            type: "bar",
+            data: {
+                labels: weekly.map(item => item.label),
+                datasets: [
+                    {
+                        label: "Attempted",
+                        data: weekly.map(item => item.attempted),
+                        backgroundColor: "rgba(59, 110, 240, 0.72)",
+                        borderRadius: 7,
+                        maxBarThickness: 28
+                    },
+                    {
+                        label: "Correct",
+                        data: weekly.map(item => item.correct),
+                        backgroundColor: "rgba(16, 185, 129, 0.78)",
+                        borderRadius: 7,
+                        maxBarThickness: 28
+                    },
+                    {
+                        label: "Tests completed",
+                        data: weekly.map(item => item.tests),
+                        backgroundColor: "rgba(245, 158, 11, 0.72)",
+                        borderRadius: 7,
+                        maxBarThickness: 28
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {legend: {position: "bottom"}},
+                scales: {y: {beginAtZero: true, ticks: {precision: 0}}}
+            }
+        });
+    }
+
+    if (!categories.length) {
+        document.getElementById("categoryEmpty").hidden = false;
+        document.getElementById("categoryPerformanceChart").hidden = true;
+    } else {
+        new Chart(document.getElementById("categoryPerformanceChart"), {
+            type: "bar",
+            data: {
+                labels: categories.map(item => item.name),
+                datasets: [{
+                    label: "Accuracy",
+                    data: categories.map(item => item.accuracy),
+                    backgroundColor: categories.map((item, index) =>
+                        index % 2 ? "rgba(139, 92, 246, 0.74)" : "rgba(59, 110, 240, 0.74)"
+                    ),
+                    borderRadius: 7,
+                    maxBarThickness: 34
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {legend: {display: false}},
+                scales: {
+                    x: {beginAtZero: true, max: 100, ticks: {callback: value => `${value}%`}}
+                }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

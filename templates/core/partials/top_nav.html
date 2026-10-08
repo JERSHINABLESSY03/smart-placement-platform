@@ -1,0 +1,33 @@
+<nav class="dashboard-topbar">
+    <div class="d-flex align-items-center justify-content-between w-100 gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <button class="dashboard-mobile-toggle btn btn-light d-lg-none" type="button" aria-label="Toggle sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <div>
+                <p class="dashboardeyebrow text-uppercase mb-1">Student workspace</p>
+                <h1 class="dashboard-title mb-0">Performance dashboard</h1>
+            </div>
+        </div>
+
+        <div class="dashboard-topbar-actions d-flex align-items-center gap-3">
+            <div class="dashboard-search d-none d-md-flex align-items-center">
+                <i class="bi bi-search me-2"></i>
+                <span>Quick search</span>
+            </div>
+            <div class="dashboard-user-pill">
+                <div class="dashboard-user-avatar">
+                    {% if profile and profile.profile_picture %}
+                        <img src="{% url 'profile_file' 'profile_picture' %}" alt="User avatar">
+                    {% else %}
+                        <span>{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="fw-semibold">{{ profile.full_name|default:request.user.get_full_name|default:request.user.username }}</div>
+                    <small>{{ request.user.email }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>

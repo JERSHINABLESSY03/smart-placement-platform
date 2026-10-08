@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments and package caches
+.venv/
+venv/
+env/
+.envrc
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+
+# Local databases and uploaded/build output
+*.sqlite3
+*.db
+media/
+staticfiles/
+build/
+dist/
+
+# Logs, coverage, and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+.coverage
+htmlcov/
+tmp/
+temp/
+
+# IDEs
+.idea/
+.vscode/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/

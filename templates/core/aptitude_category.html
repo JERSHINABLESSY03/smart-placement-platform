@@ -1,0 +1,50 @@
+{% extends "core/base.html" %}
+{% block title %}{{ category.name }}{% endblock %}
+{% block content %}
+<div class="aptitude-breadcrumb">
+    <a href="{% url 'practice' %}">Practice</a><i class="bi bi-chevron-right"></i><span>{{ category.name }}</span>
+</div>
+<section class="aptitude-page-heading mb-4">
+    <span class="aptitude-eyebrow">Category</span>
+    <h1>{{ category.name }}</h1>
+    <p>{{ category.description|default:"Choose a topic to review your performance or start a focused question set." }}</p>
+</section>
+
+<div class="aptitude-section-heading">
+    <div>
+        <span class="aptitude-eyebrow">Learning path</span>
+        <h2>Topics</h2>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for item in topic_summaries %}
+        <div class="col-md-6 col-xl-4">
+            <article class="aptitude-topic-card h-100">
+                <div class="d-flex align-items-start justify-content-between gap-2">
+                    <div>
+                        <h3>{{ item.topic.name }}</h3>
+                        <p>{{ item.topic.description|default:"Practice this topic and build your accuracy." }}</p>
+                    </div>
+                    <span class="aptitude-count-pill">{{ item.topic.question_count }} Q</span>
+                </div>
+                <div class="topic-performance">
+                    <div><span>Accuracy</span><strong>{{ item.performance.accuracy }}%</strong></div>
+                    <div><span>Attempts</span><strong>{{ item.performance.attempts }}</strong></div>
+                    <div><span>Score</span><strong>{{ item.performance.score }}</strong></div>
+                </div>
+                <a href="{% url 'aptitude_topic' category_slug=category.slug topic_slug=item.topic.slug %}" class="aptitude-text-link">
+                    View topic <i class="bi bi-arrow-right"></i>
+                </a>
+            </article>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="aptitude-empty">
+                <h3>No active topics yet</h3>
+                <p>An administrator can add topics and questions in Django admin.</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

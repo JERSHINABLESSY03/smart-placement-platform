@@ -1,0 +1,89 @@
+{% extends "core/base.html" %}
+{% block title %}{{ problem.title }} | Coding{% endblock %}
+{% block content %}
+<div class="coding-breadcrumb">
+    <a href="{% url 'coding' %}">Coding practice</a><i class="bi bi-chevron-right"></i><span>{{ problem.title }}</span>
+</div>
+
+<div class="coding-detail-layout">
+    <main class="coding-detail-main">
+        <header class="coding-problem-header">
+            <div>
+                <div class="coding-problem-meta mb-2">
+                    <span class="coding-difficulty difficulty-{{ problem.difficulty|lower }}">{{ problem.get_difficulty_display }}</span>
+                    <span>{{ problem.topic.name }}</span>
+                    {% for tag in problem.tags %}<span class="coding-tag">{{ tag }}</span>{% endfor %}
+                </div>
+                <h1>{{ problem.title }}</h1>
+            </div>
+            <div class="coding-attempt-badge"><i class="bi bi-arrow-repeat"></i> {{ problem_attempts }} attempt{{ problem_attempts|pluralize }}</div>
+        </header>
+
+        <section class="coding-content-card">
+            <h2>Problem statement</h2>
+            <div class="coding-prose">{{ problem.statement|linebreaks }}</div>
+            {% if problem.input_format %}
+                <h3>Input format</h3><div class="coding-prose">{{ problem.input_format|linebreaks }}</div>
+            {% endif %}
+            {% if problem.output_format %}
+                <h3>Output format</h3><div class="coding-prose">{{ problem.output_format|linebreaks }}</div>
+            {% endif %}
+            {% if problem.constraints %}
+                <h3>Constraints</h3><div class="coding-prose">{{ problem.constraints|linebreaks }}</div>
+            {% endif %}
+            <h3>Examples</h3>
+            {% for sample in sample_cases %}
+                <div class="coding-example">
+                    <div><span>Input</span><pre>{{ sample.input }}</pre></div>
+                    <div><span>Expected output</span><pre>{{ sample.output }}</pre></div>
+                </div>
+            {% empty %}
+                <p class="coding-muted">Sample examples will be added by the problem author.</p>
+            {% endfor %}
+            {% if problem.explanation %}
+                <details class="coding-explanation">
+                    <summary>Show solution notes</summary>
+                    <div>{{ problem.explanation|linebreaks }}</div>
+                </details>
+            {% endif %}
+        </section>
+
+        <section class="coding-editor-card">
+            <div class="coding-editor-heading">
+                <div><span class="coding-eyebrow">Your solution</span><h2>Code editor</h2></div>
+                <span class="execution-disabled"><i class="bi bi-shield-lock"></i> Execution disabled</span>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="coding-editor-toolbar">
+                    <label for="{{ form.language.id_for_label }}">Language</label>
+                    {{ form.language }}
+                </div>
+                {% if form.language.errors %}<div class="text-danger small mb-2">{{ form.language.errors }}</div>{% endif %}
+                <div class="code-editor-shell">
+                    <div class="editor-gutter" aria-hidden="true">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18</div>
+                    {{ form.source_code }}
+                </div>
+                {% if form.source_code.errors %}<div class="text-danger small mt-2">{{ form.source_code.errors }}</div>{% endif %}
+                <p class="coding-security-note"><i class="bi bi-info-circle"></i> Submit saves your code only. The server does not run it or claim a test result.</p>
+                <button type="submit" class="btn btn-primary coding-submit-button"><i class="bi bi-cloud-arrow-up"></i> Submit solution</button>
+            </form>
+        </section>
+    </main>
+
+    <aside class="coding-detail-sidebar">
+        <section class="coding-sidebar-card">
+            <span class="coding-eyebrow">Problem details</span>
+            <div class="coding-detail-stat"><span>Difficulty</span><strong>{{ problem.get_difficulty_display }}</strong></div>
+            <div class="coding-detail-stat"><span>Topic</span><strong>{{ problem.topic.name }}</strong></div>
+            <div class="coding-detail-stat"><span>Attempts</span><strong>{{ problem_attempts }}</strong></div>
+            <div class="coding-detail-stat"><span>Created</span><strong>{{ problem.created_at|date:"M Y" }}</strong></div>
+        </section>
+        <section class="coding-sidebar-card security-card">
+            <div class="security-icon"><i class="bi bi-shield-check"></i></div>
+            <h3>Safe by design</h3>
+            <p>Submitted source is stored as text. It is never passed to Python, a shell, or another interpreter on this web server.</p>
+        </section>
+    </aside>
+</div>
+{% endblock %}

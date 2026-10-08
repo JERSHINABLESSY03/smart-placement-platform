@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+{% block title %}Submission received{% endblock %}
+{% block content %}
+<div class="coding-breadcrumb">
+    <a href="{% url 'coding' %}">Coding practice</a><i class="bi bi-chevron-right"></i>
+    <a href="{% url 'coding_problem_detail' slug=submission.problem.slug %}">{{ submission.problem.title }}</a>
+    <i class="bi bi-chevron-right"></i><span>Submission</span>
+</div>
+<section class="submission-result-card">
+    <div class="submission-result-icon"><i class="bi bi-cloud-check"></i></div>
+    <span class="coding-eyebrow">Submission #{{ submission.pk }}</span>
+    <h1>Solution received</h1>
+    <p>Your code was saved securely. It was <strong>not executed</strong>, and no correctness result has been inferred.</p>
+    <div class="submission-status-grid">
+        <div><span>Problem</span><strong>{{ submission.problem.title }}</strong></div>
+        <div><span>Language</span><strong>{{ submission.get_language_display }}</strong></div>
+        <div><span>Status</span><strong>{{ submission.get_status_display }}</strong></div>
+        <div><span>Sample validation</span><strong>{{ submission.get_sample_validation_status_display }}</strong></div>
+        <div><span>Submitted</span><strong>{{ submission.created_at|date:"M j, Y H:i" }}</strong></div>
+    </div>
+    <div class="submission-notice"><i class="bi bi-info-circle"></i> {{ submission.validation_message }}</div>
+    <div class="submission-code">
+        <div><span>Saved source code</span><span>{{ submission.source_code|length }} characters</span></div>
+        <pre>{{ submission.source_code }}</pre>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <a href="{% url 'coding_problem_detail' slug=submission.problem.slug %}" class="btn btn-primary">Back to problem</a>
+        <a href="{% url 'coding' %}" class="btn btn-outline-primary">Browse problems</a>
+    </div>
+</section>
+{% endblock %}

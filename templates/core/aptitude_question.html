@@ -1,0 +1,47 @@
+{% extends "core/base.html" %}
+{% block title %}Practice question{% endblock %}
+{% block content %}
+<div class="aptitude-breadcrumb">
+    <a href="{% url 'practice' %}">Practice</a><i class="bi bi-chevron-right"></i>
+    <a href="{% url 'aptitude_category' category_slug=question.topic.category.slug %}">{{ question.topic.category.name }}</a>
+    <i class="bi bi-chevron-right"></i>
+    <a href="{% url 'aptitude_topic' category_slug=question.topic.category.slug topic_slug=question.topic.slug %}">{{ question.topic.name }}</a>
+</div>
+
+<div class="question-workspace">
+    <main class="question-card">
+        <div class="question-card-heading">
+            <div>
+                <span class="aptitude-eyebrow">{{ question.topic.category.name }} / {{ question.topic.name }}</span>
+                <h1>Practice question</h1>
+            </div>
+            <div class="question-pills">
+                <span class="difficulty-chip difficulty-{{ question.difficulty }}">{{ question.get_difficulty_display }}</span>
+                <span class="question-mark-pill">{{ question.marks }} mark{{ question.marks|pluralize }}</span>
+            </div>
+        </div>
+
+        <div class="question-prompt">{{ question.question_text|linebreaksbr }}</div>
+        <form method="post" class="answer-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            {% for option in form.selected_option %}
+                <label class="answer-option" for="{{ option.id_for_label }}">
+                    {{ option.tag }}
+                    <span>{{ option.choice_label }}</span>
+                </label>
+            {% endfor %}
+            {% for error in form.selected_option.errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+            <button type="submit" class="btn btn-primary aptitude-button mt-3">
+                Submit answer <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+        </form>
+    </main>
+    <aside class="question-side-note">
+        <div class="side-note-icon"><i class="bi bi-lightbulb"></i></div>
+        <h3>Take your time</h3>
+        <p>Time spent is measured while this question is open. Once submitted, you’ll see the result and explanation.</p>
+        <div class="side-note-detail"><i class="bi bi-shield-check"></i> Your answer is saved to your account.</div>
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends "core/base.html" %}
+{% block title %}{{ attempt.test.title }}{% endblock %}
+{% block content %}
+<div class="test-taking-shell" data-deadline="{{ deadline_iso }}" data-answer-url="{% url 'save_test_answer' attempt_id=attempt.pk %}" data-submit-url="{% url 'submit_test_attempt' attempt_id=attempt.pk %}" data-result-url="{% url 'test_result' attempt_id=attempt.pk %}">
+    <header class="test-taking-header">
+        <div>
+            <span class="assessment-eyebrow">Assessment in progress</span>
+            <h1>{{ attempt.test.title }}</h1>
+            <p>{{ attempt.total_questions }} questions <span aria-hidden="true">·</span> {{ attempt.total_marks }} marks</p>
+        </div>
+        <div class="test-timer" id="testTimer" role="timer" aria-live="polite">
+            <i class="bi bi-stopwatch"></i>
+            <span id="timerValue">--:--</span>
+            <small>remaining</small>
+        </div>
+    </header>
+
+    <div class="test-progress-wrap">
+        <div class="test-save-indicator"><span id="saveIndicator" class="save-dot"></span><span id="saveText">Progress saved</span></div>
+        <div class="test-progress-track"><span id="testProgressBar"></span></div>
+    </div>
+
+    <div class="test-taking-layout">
+        <main class="test-question-stage">
+            {% for item in test_questions %}
+                <section class="test-question-card" data-question-card data-test-question-id="{{ item.pk }}" data-position="{{ forloop.counter0 }}" data-marked="{% if item.marked_for_review %}true{% else %}false{% endif %}" {% if not forloop.first %}hidden{% endif %}>
+                    <div class="test-question-heading">
+                        <span class="test-question-number">Question {{ forloop.counter }} <small>of {{ attempt.total_questions }}</small></span>
+                        <div class="test-question-badges">
+                            <span>{{ item.question.topic.category.name }}</span>
+                            <span>{{ item.question.topic.name }}</span>
+                            <span>{{ item.question.get_difficulty_display }}</span>
+                            <strong>{{ item.marks }} mark{{ item.marks|pluralize }}</strong>
+                        </div>
+                    </div>
+                    <h2>{{ item.question.question_text|linebreaksbr }}</h2>
+                    <div class="test-options">
+                        {% for option in item.question.options.all %}
+                            <label class="test-answer-option">
+                                <input type="radio" name="answer_{{ item.pk }}" value="{{ option.pk }}" {% if item.saved_option_id == option.pk %}checked{% endif %}>
+                                <span class="test-answer-letter">{{ option.label }}</span>
+                                <span>{{ option.text }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div class="test-question-controls">
+                        <button type="button" class="btn btn-outline-secondary" data-action="previous" {% if forloop.first %}disabled{% endif %}><i class="bi bi-arrow-left"></i> Previous</button>
+                        <button type="button" class="btn btn-outline-warning {% if item.marked_for_review %}active{% endif %}" data-action="review">
+                            {% if item.marked_for_review %}<i class="bi bi-bookmark-check-fill"></i> Marked for review{% else %}<i class="bi bi-bookmark"></i> Mark for review{% endif %}
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-action="clear">
+                            <i class="bi bi-eraser"></i> Clear answer
+                        </button>
+                        <button type="button" class="btn btn-primary" data-action="next" {% if forloop.last %}disabled{% endif %}>Next <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </section>
+            {% endfor %}
+        </main>
+
+        <aside class="test-question-sidebar">
+            <div class="test-sidebar-card">
+                <div class="test-sidebar-title">
+                    <div><span class="assessment-eyebrow">Question map</span><h2>Navigate</h2></div>
+                    <span>{{ attempt.total_questions }}</span>
+                </div>
+                <div class="question-map-grid">
+                    {% for item in test_questions %}
+                        <button type="button" class="question-map-button {% if item.saved_option_id %}is-answered{% endif %} {% if item.marked_for_review %}is-review{% endif %}" data-map-position="{{ forloop.counter0 }}" aria-label="Go to question {{ forloop.counter }}">{{ forloop.counter }}</button>
+                    {% endfor %}
+                </div>
+                <div class="question-map-legend">
+                    <span><i class="legend-answered"></i> Answered</span>
+                    <span><i class="legend-review"></i> Review</span>
+                    <span><i class="legend-unanswered"></i> Unanswered</span>
+                </div>
+            </div>
+            <div class="test-submit-card">
+                <h3>Ready to finish?</h3>
+                <p>Your answers are saved automatically. You can still review unanswered questions before submitting.</p>
+                <button type="button" class="btn btn-success w-100" id="submitTestButton"><i class="bi bi-check2-circle"></i> Submit test</button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<form class="d-none" aria-hidden="true">{% csrf_token %}</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const root = document.querySelector(".test-taking-shell");
+    if (!root) return;
+    const cards = [...root.querySelectorAll("[data-question-card]")];
+    const mapButtons = [...root.querySelectorAll("[data-map-position]")];
+    const timerValue = document.getElementById("timerValue");
+    const timer = document.getElementById("testTimer");
+    const saveText = document.getElementById("saveText");
+    const saveDot = document.getElementById("saveIndicator");
+    const progressBar = document.getElementById("testProgressBar");
+    const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+    let currentPosition = 0;
+    let saveQueue = Promise.resolve();
+    let expired = false;
+    let submitting = false;
+
+    function selectedOption(card) {
+        return card.querySelector("input[type=radio]:checked")?.value || null;
+    }
+
+    function marked(card) {
+        return card.dataset.marked === "true";
+    }
+
+    function updateMap() {
+        cards.forEach((card, index) => {
+            const button = mapButtons[index];
+            button.classList.toggle("is-current", index === currentPosition);
+            button.classList.toggle("is-answered", Boolean(selectedOption(card)));
+            button.classList.toggle("is-review", marked(card));
+        });
+        const answered = cards.filter(card => Boolean(selectedOption(card))).length;
+        progressBar.style.width = `${cards.length ? answered * 100 / cards.length : 0}%`;
+    }
+
+    function showQuestion(position) {
+        currentPosition = Math.max(0, Math.min(cards.length - 1, position));
+        cards.forEach((card, index) => { card.hidden = index !== currentPosition; });
+        updateMap();
+        window.scrollTo({top: 0, behavior: "smooth"});
+    }
+
+    async function saveCard(card) {
+        if (expired) return;
+        saveText.textContent = "Saving…";
+        saveDot.classList.add("is-saving");
+        const payload = {
+            test_question_id: Number(card.dataset.testQuestionId),
+            selected_option_id: selectedOption(card),
+            marked_for_review: marked(card),
+        };
+        saveQueue = saveQueue.catch(() => {}).then(async () => {
+            const response = await fetch(root.dataset.answerUrl, {
+                method: "POST",
+                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                body: JSON.stringify(payload),
+                credentials: "same-origin",
+            });
+            const body = await response.json();
+            if (response.status === 409 && body.error?.includes("expired")) {
+                expired = true;
+                window.location.assign(root.dataset.resultUrl);
+                return;
+            }
+            if (!response.ok) throw new Error(body.error || "Could not save this answer.");
+            saveText.textContent = "Progress saved";
+            saveDot.classList.remove("is-saving", "is-error");
+        }).catch(error => {
+            saveText.textContent = error.message || "Save failed. Check your connection.";
+            saveDot.classList.add("is-error");
+            throw error;
+        });
+        return saveQueue;
+    }
+
+    async function submitTest(isAutomatic = false) {
+        if (expired || submitting) return;
+        if (!isAutomatic && !window.confirm("Submit this assessment now? You cannot change answers after submitting.")) return;
+        submitting = true;
+        try {
+            await Promise.all(cards.map(card => saveCard(card)));
+        } catch (error) {
+            submitting = false;
+            return;
+        }
+        saveText.textContent = "Submitting…";
+        try {
+            const response = await fetch(root.dataset.submitUrl, {
+                method: "POST",
+                headers: {"X-CSRFToken": csrfToken},
+                credentials: "same-origin",
+            });
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.error || "Submission failed. Try again.");
+            expired = true;
+            window.location.assign(body.result_url || root.dataset.resultUrl);
+        } catch (error) {
+            saveText.textContent = error.message || "Submission failed. Try again.";
+            submitting = false;
+        }
+    }
+
+    root.addEventListener("change", event => {
+        if (!event.target.matches("input[type=radio]")) return;
+        const card = event.target.closest("[data-question-card]");
+        updateMap();
+        saveCard(card).catch(() => {});
+    });
+
+    root.addEventListener("click", event => {
+        const actionButton = event.target.closest("[data-action]");
+        if (actionButton) {
+            const card = cards[currentPosition];
+            const action = actionButton.dataset.action;
+            if (action === "previous") showQuestion(currentPosition - 1);
+            if (action === "next") showQuestion(currentPosition + 1);
+            if (action === "clear") {
+                card.querySelectorAll("input[type=radio]").forEach(input => { input.checked = false; });
+                updateMap();
+                saveCard(card).catch(() => {});
+            }
+            if (action === "review") {
+                card.dataset.marked = marked(card) ? "false" : "true";
+                actionButton.classList.toggle("active", marked(card));
+                actionButton.innerHTML = marked(card)
+                    ? '<i class="bi bi-bookmark-check-fill"></i> Marked for review'
+                    : '<i class="bi bi-bookmark"></i> Mark for review';
+                updateMap();
+                saveCard(card).catch(() => {});
+            }
+        }
+        const mapButton = event.target.closest("[data-map-position]");
+        if (mapButton) showQuestion(Number(mapButton.dataset.mapPosition));
+    });
+
+    document.getElementById("submitTestButton").addEventListener("click", () => submitTest(false));
+
+    const deadline = new Date(root.dataset.deadline).getTime();
+    function tick() {
+        const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        timerValue.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+        if (remaining <= 60) timer.classList.add("is-warning");
+        if (remaining === 0 && !submitting && !expired) {
+            submitTest(true);
+        }
+    }
+    updateMap();
+    tick();
+    window.setInterval(tick, 1000);
+    window.setInterval(() => {
+        if (!expired && !submitting) saveCard(cards[currentPosition]).catch(() => {});
+    }, 12000);
+    window.addEventListener("beforeunload", event => {
+        if (!expired) {
+            event.preventDefault();
+            event.returnValue = "";
+        }
+    });
+})();
+</script>
+{% endblock %}

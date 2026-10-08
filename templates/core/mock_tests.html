@@ -1,0 +1,78 @@
+{% extends "core/base.html" %}
+{% block title %}Placement assessments{% endblock %}
+{% block content %}
+<section class="assessment-hero mb-4">
+    <div>
+        <span class="assessment-eyebrow">Timed placement assessments</span>
+        <h1>Practice under real test conditions.</h1>
+        <p>Take a structured assessment across multiple aptitude categories. Your answers are saved as you go, and results are calculated when you submit.</p>
+    </div>
+    <div class="assessment-hero-icon"><i class="bi bi-stopwatch"></i></div>
+</section>
+
+<div class="assessment-section-heading">
+    <div><span class="assessment-eyebrow">Test library</span><h2>Available assessments</h2></div>
+    <span class="assessment-muted">Resume any in-progress attempt without losing saved answers.</span>
+</div>
+
+<div class="row g-4">
+    {% for item in test_cards %}
+        <div class="col-md-6 col-xl-4">
+            <article class="assessment-card h-100">
+                <div class="assessment-card-top">
+                    <div class="assessment-card-icon"><i class="bi bi-clipboard2-check"></i></div>
+                    <span class="assessment-difficulty">{{ item.test.get_difficulty_display }}</span>
+                </div>
+                <h3>{{ item.test.title }}</h3>
+                <p>{{ item.test.description|default:"A timed placement assessment built from the question bank." }}</p>
+                <div class="assessment-meta-grid">
+                    <div><span>Questions</span><strong>{{ item.question_count }}</strong></div>
+                    <div><span>Duration</span><strong>{{ item.test.duration_minutes }} min</strong></div>
+                    <div><span>Total marks</span><strong>{{ item.total_marks }}</strong></div>
+                </div>
+                <div class="assessment-category-tags">
+                    {% for category in item.categories %}<span>{{ category }}</span>{% endfor %}
+                </div>
+                {% if item.active_attempt %}
+                    <a href="{% url 'test_attempt' attempt_id=item.active_attempt.pk %}" class="btn btn-warning assessment-start-button">
+                        Resume assessment <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                {% else %}
+                    <form method="post" class="mt-auto">
+                        {% csrf_token %}
+                        <input type="hidden" name="test_id" value="{{ item.test.pk }}">
+                        <button type="submit" class="btn btn-primary assessment-start-button">
+                            Start assessment <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </form>
+                {% endif %}
+            </article>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="assessment-empty">
+                <div><i class="bi bi-journal-check"></i></div>
+                <h3>No assessments are published yet</h3>
+                <p>Administrators can build tests from database-backed questions in Django admin.</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<section class="assessment-history mt-5">
+    <div class="assessment-section-heading">
+        <div><span class="assessment-eyebrow">Your results</span><h2>Recent attempts</h2></div>
+    </div>
+    {% for attempt in history %}
+        <a href="{% url 'test_result' attempt_id=attempt.pk %}" class="assessment-history-row">
+            <span class="history-test-name">{{ attempt.test.title }}</span>
+            <span class="history-test-status status-{{ attempt.status }}">{{ attempt.get_status_display }}</span>
+            <span>{{ attempt.score }}/{{ attempt.total_marks }}</span>
+            <span>{{ attempt.accuracy|floatformat:1 }}% accuracy</span>
+            <time>{{ attempt.submitted_at|date:"M j, Y H:i" }}</time>
+        </a>
+    {% empty %}
+        <p class="assessment-history-empty">Your completed assessments will appear here.</p>
+    {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+<div class="progress-panel">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="progress-topic">{{ item.topic }}</span>
+        <span class="progress-score">{{ item.mastery_score }}%</span>
+    </div>
+    <div class="progress-track">
+        <div class="progress-fill" style="width: {{ item.mastery_score }}%;"></div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mt-2 text-muted small">
+        <span>{{ item.solved|default:0 }} solved</span>
+        <span>{{ item.attempts|default:0 }} attempts</span>
+    </div>
+</div>

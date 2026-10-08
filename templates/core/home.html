@@ -1,0 +1,36 @@
+{% extends "core/base.html" %}
+{% block title %}Smart Placement Platform{% endblock %}
+{% block content %}
+<section class="hero-section py-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <span class="badge bg-primary-subtle text-primary-emphasis mb-3">Placement-ready learning engine</span>
+            <h1 class="display-4 fw-bold mb-3">Master aptitude, coding, fundamentals, and interview readiness.</h1>
+            <p class="lead text-secondary">A centralized platform to practice aptitude, coding, DBMS, CS fundamentals, analytics, and AI-guided preparation for software placements.</p>
+            <div class="d-flex gap-3 flex-wrap mt-4">
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Create account</a>
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">Login</a>
+            </div>
+            <div class="row mt-5 g-3">
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h5>20+</h5><p class="mb-0">Practice tracks</p></div></div></div>
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h5>1500+</h5><p class="mb-0">Questions</p></div></div></div>
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h5>90%</h5><p class="mb-0">Focus score</p></div></div></div>
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h5>AI</h5><p class="mb-0">Mentor</p></div></div></div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-lg border-0 p-4">
+                <div class="card-body">
+                    <h4 class="fw-bold mb-3">What students can do</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Practice aptitude and reasoning questions</li>
+                        <li class="list-group-item">Solve coding problems and mock tests</li>
+                        <li class="list-group-item">Track weak areas and improvement trends</li>
+                        <li class="list-group-item">Ask AI mentor for conceptual explanations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

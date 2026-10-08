@@ -1,0 +1,56 @@
+{% extends "core/base.html" %}
+{% block title %}Answer result{% endblock %}
+{% block content %}
+<div class="aptitude-breadcrumb">
+    <a href="{% url 'practice' %}">Practice</a><i class="bi bi-chevron-right"></i>
+    <a href="{% url 'aptitude_category' category_slug=attempt.question.topic.category.slug %}">{{ attempt.question.topic.category.name }}</a>
+    <i class="bi bi-chevron-right"></i>
+    <a href="{% url 'aptitude_topic' category_slug=attempt.question.topic.category.slug topic_slug=attempt.question.topic.slug %}">{{ attempt.question.topic.name }}</a>
+    <i class="bi bi-chevron-right"></i><span>Result</span>
+</div>
+
+<section class="result-card {% if attempt.is_correct %}result-correct{% else %}result-incorrect{% endif %}">
+    <div class="result-symbol">
+        {% if attempt.is_correct %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-x-lg"></i>{% endif %}
+    </div>
+    <span class="aptitude-eyebrow">Answer submitted</span>
+    <h1>{% if attempt.is_correct %}Correct answer{% else %}Not quite{% endif %}</h1>
+    <p>{% if attempt.is_correct %}Well done. You earned {{ attempt.marks_awarded }} mark{{ attempt.marks_awarded|pluralize }}.{% else %}Review the explanation below and try another question to reinforce the concept.{% endif %}</p>
+</section>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-8">
+        <article class="question-card">
+            <span class="aptitude-eyebrow">{{ attempt.question.topic.category.name }} / {{ attempt.question.topic.name }}</span>
+            <h2 class="result-question">{{ attempt.question.question_text }}</h2>
+            <div class="result-answer-list">
+                {% for option in attempt.question.options.all %}
+                    <div class="result-answer-option {% if option.is_correct %}answer-is-correct{% elif option.pk == attempt.selected_option_id %}answer-is-selected-wrong{% endif %}">
+                        <span class="answer-letter">{{ option.label }}</span>
+                        <span>{{ option.text }}</span>
+                        {% if option.is_correct %}<strong>Correct answer</strong>{% elif option.pk == attempt.selected_option_id %}<strong>Your answer</strong>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="explanation-panel">
+                <span class="aptitude-eyebrow">Explanation</span>
+                <p>{{ attempt.question.explanation|linebreaksbr }}</p>
+            </div>
+        </article>
+    </div>
+    <div class="col-lg-4">
+        <aside class="question-card result-stats">
+            <span class="aptitude-eyebrow">Topic performance</span>
+            <h3>{{ attempt.question.topic.name }}</h3>
+            <div class="topic-performance vertical">
+                <div><span>Accuracy</span><strong>{{ performance.accuracy }}%</strong></div>
+                <div><span>Attempts</span><strong>{{ performance.attempts }}</strong></div>
+                <div><span>Total score</span><strong>{{ performance.score }}</strong></div>
+                <div><span>Time this question</span><strong>{{ attempt.time_taken_seconds }} sec</strong></div>
+            </div>
+            <a href="{% url 'aptitude_topic' category_slug=attempt.question.topic.category.slug topic_slug=attempt.question.topic.slug %}" class="btn btn-primary aptitude-button w-100 mt-3">Continue topic</a>
+            <a href="{% url 'practice' %}" class="aptitude-text-link mt-3">Back to categories</a>
+        </aside>
+    </div>
+</div>
+{% endblock %}

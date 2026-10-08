@@ -1,0 +1,59 @@
+{% extends "core/base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-4 p-lg-5">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis px-3 py-2">Student profile</span>
+                        <h2 class="mt-3 mb-0">{{ profile.full_name|default:request.user.get_full_name|default:request.user.username }}</h2>
+                    </div>
+                    <a href="{% url 'profile_edit' %}" class="btn btn-primary">Edit profile</a>
+                </div>
+
+                {% if profile %}
+                    <div class="row g-4 align-items-start">
+                        <div class="col-lg-3 text-center">
+                            {% if profile.profile_picture %}
+                                <img src="{% url 'profile_file' 'profile_picture' %}" alt="Profile picture" class="img-fluid rounded-circle mb-3" style="width: 160px; height: 160px; object-fit: cover; border: 4px solid #dfeafc;">
+                            {% else %}
+                                <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold mb-3" style="width: 160px; height: 160px; margin: 0 auto; font-size: 3rem;">{{ profile.full_name|first|upper }}</div>
+                            {% endif %}
+                            <p class="text-muted mb-0">{{ profile.current_preparation_level|default:"Intermediate" }}</p>
+                        </div>
+
+                        <div class="col-lg-9">
+                            <div class="row g-3">
+                                <div class="col-md-6"><strong>Full name:</strong> {{ profile.full_name }}</div>
+                                <div class="col-md-6"><strong>Email:</strong> {{ request.user.email }}</div>
+                                <div class="col-md-6"><strong>College:</strong> {{ profile.college|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>Degree:</strong> {{ profile.degree|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>Department:</strong> {{ profile.department|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>Graduation year:</strong> {{ profile.graduation_year|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>Programming languages:</strong> {{ profile.programming_languages|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>Preferred job role:</strong> {{ profile.preferred_job_role|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>Preferred domain:</strong> {{ profile.preferred_domain|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>Preparation level:</strong> {{ profile.current_preparation_level|default:"Not added yet" }}</div>
+                                <div class="col-md-6"><strong>GitHub:</strong> {{ profile.github_url|default:"N/A" }}</div>
+                                <div class="col-md-6"><strong>LinkedIn:</strong> {{ profile.linkedin_url|default:"N/A" }}</div>
+                                <div class="col-md-12"><strong>Technical skills:</strong> {{ profile.technical_skills|default:"Not added yet" }}</div>
+                                <div class="col-md-12"><strong>Bio:</strong> {{ profile.bio|default:"Add a short introduction about your goals." }}</div>
+                                {% if profile.resume %}
+                                    <div class="col-md-12">
+                                        <strong>Resume:</strong>
+                                        <a href="{% url 'profile_file' 'resume' %}" class="ms-2">Download uploaded resume</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Complete your profile setup to personalize the platform.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

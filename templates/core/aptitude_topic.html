@@ -1,0 +1,51 @@
+{% extends "core/base.html" %}
+{% block title %}{{ topic.name }} practice{% endblock %}
+{% block content %}
+<div class="aptitude-breadcrumb">
+    <a href="{% url 'practice' %}">Practice</a><i class="bi bi-chevron-right"></i>
+    <a href="{% url 'aptitude_category' category_slug=topic.category.slug %}">{{ topic.category.name }}</a>
+    <i class="bi bi-chevron-right"></i><span>{{ topic.name }}</span>
+</div>
+<section class="aptitude-page-heading mb-4">
+    <span class="aptitude-eyebrow">{{ topic.category.name }}</span>
+    <h1>{{ topic.name }}</h1>
+    <p>{{ topic.description|default:"Select any active question below. Your answer, accuracy, score, and time are tracked automatically." }}</p>
+</section>
+
+<section class="topic-performance-banner mb-4">
+    <div><span>Questions attempted</span><strong>{{ performance.attempts }}</strong></div>
+    <div><span>Correct answers</span><strong>{{ performance.correct }}</strong></div>
+    <div><span>Accuracy</span><strong>{{ performance.accuracy }}%</strong></div>
+    <div><span>Score earned</span><strong>{{ performance.score }}</strong></div>
+    <div><span>Practice time</span><strong>{{ performance.time_spent }} sec</strong></div>
+</section>
+
+<div class="aptitude-section-heading">
+    <div>
+        <span class="aptitude-eyebrow">Question bank</span>
+        <h2>Choose a question</h2>
+    </div>
+</div>
+<div class="aptitude-question-list">
+    {% for question in questions %}
+        <article class="aptitude-question-row">
+            <div class="question-number">{{ forloop.counter|stringformat:"02d" }}</div>
+            <div class="question-row-copy">
+                <h3>{{ question.question_text|truncatechars:150 }}</h3>
+                <div class="question-row-meta">
+                    <span class="difficulty-chip difficulty-{{ question.difficulty }}">{{ question.get_difficulty_display }}</span>
+                    <span>{{ question.marks }} mark{{ question.marks|pluralize }}</span>
+                    <span>{{ question.attempts_count }} attempt{{ question.attempts_count|pluralize }}</span>
+                    {% if question.attempts_count %}<span>{{ question.correct_count }} correct</span>{% endif %}
+                </div>
+            </div>
+            <a href="{% url 'aptitude_question' question_id=question.pk %}" class="btn btn-outline-primary aptitude-button">Start</a>
+        </article>
+    {% empty %}
+        <div class="aptitude-empty">
+            <h3>No active questions yet</h3>
+            <p>Questions are managed in Django admin and will appear here when published.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

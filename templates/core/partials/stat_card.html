@@ -1,0 +1,12 @@
+<div class="stat-card">
+    <div class="stat-header">
+        <div>
+            <span class="stat-label">{{ label }}</span>
+            <h3 class="stat-value">{{ value }}</h3>
+        </div>
+        {% if icon %}
+            <div class="stat-icon"><i class="{{ icon }}"></i></div>
+        {% endif %}
+    </div>
+    <div class="stat-meta">{{ meta|default:"Updated from recent activity" }}</div>
+</div>

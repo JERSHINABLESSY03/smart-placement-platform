@@ -1,0 +1,94 @@
+{% extends "core/base.html" %}
+{% block title %}Coding practice{% endblock %}
+{% block content %}
+<section class="coding-hero mb-4">
+    <div>
+        <span class="coding-eyebrow">Coding workspace</span>
+        <h1>Build problem-solving skills that stick.</h1>
+        <p>Practice by topic, save submissions, and track your progress. Code execution is disabled in this version.</p>
+    </div>
+    <div class="coding-hero-mark"><i class="bi bi-code-slash"></i></div>
+</section>
+
+<section class="coding-stat-grid mb-4">
+    <div class="coding-stat"><span>Problems attempted</span><strong>{{ problems_attempted }}</strong><i class="bi bi-pencil-square"></i></div>
+    <div class="coding-stat"><span>Problems solved</span><strong>{{ problems_solved }}</strong><i class="bi bi-check2-circle"></i></div>
+    <div class="coding-stat"><span>Submission history</span><strong>{{ recent_submissions|length }}</strong><i class="bi bi-clock-history"></i></div>
+</section>
+
+<section class="coding-difficulty-overview mb-4" aria-label="Performance by difficulty">
+    {% for item in difficulty_performance %}
+        <div><span>{{ item.label }}</span><strong>{{ item.solved }} solved</strong><small>{{ item.attempted }} attempted</small></div>
+    {% endfor %}
+</section>
+
+<div class="coding-section-heading">
+    <div><span class="coding-eyebrow">Practice library</span><h2>Explore by topic</h2></div>
+    <form method="get" class="coding-filters">
+        <label class="visually-hidden" for="topic-filter">Filter by topic</label>
+        <select class="form-select" id="topic-filter" name="topic" onchange="this.form.submit()">
+            <option value="">All topics</option>
+            {% for topic in topics %}
+                <option value="{{ topic.slug }}" {% if selected_topic == topic.slug %}selected{% endif %}>{{ topic.name }}</option>
+            {% endfor %}
+        </select>
+        <label class="visually-hidden" for="difficulty-filter">Filter by difficulty</label>
+        <select class="form-select" id="difficulty-filter" name="difficulty" onchange="this.form.submit()">
+            <option value="">All levels</option>
+            {% for value, label in difficulty_choices %}
+                <option value="{{ value }}" {% if selected_difficulty == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<div class="coding-topic-chips mb-3">
+    {% for item in topic_performance %}
+        <a href="?topic={{ item.topic.slug }}" class="coding-topic-chip {% if selected_topic == item.topic.slug %}is-selected{% endif %}">
+            <span>{{ item.topic.name }}</span>
+            <small>{{ item.solved }}/{{ item.attempted }} solved</small>
+        </a>
+    {% endfor %}
+</div>
+
+<div class="coding-problem-list">
+    {% for problem in problems %}
+        <article class="coding-problem-row">
+            <div class="coding-problem-icon"><i class="bi bi-braces"></i></div>
+            <div class="coding-problem-copy">
+                <h3><a href="{% url 'coding_problem_detail' slug=problem.slug %}">{{ problem.title }}</a></h3>
+                <p>{{ problem.statement|truncatechars:145 }}</p>
+                <div class="coding-problem-meta">
+                    <span class="coding-difficulty difficulty-{{ problem.difficulty|lower }}">{{ problem.get_difficulty_display }}</span>
+                    <span>{{ problem.topic.name }}</span>
+                    {% for tag in problem.tags %}<span class="coding-tag">{{ tag }}</span>{% endfor %}
+                </div>
+            </div>
+            <a href="{% url 'coding_problem_detail' slug=problem.slug %}" class="btn btn-outline-primary coding-open-button">Open problem <i class="bi bi-arrow-up-right"></i></a>
+        </article>
+    {% empty %}
+        <div class="coding-empty">
+            <div><i class="bi bi-code-square"></i></div>
+            <h3>No problems match these filters</h3>
+            <p>Try another topic or difficulty, or ask an administrator to publish problems in the coding library.</p>
+            <a class="btn btn-primary" href="{% url 'coding' %}">Clear filters</a>
+        </div>
+    {% endfor %}
+</div>
+
+<section class="coding-history-panel mt-4">
+    <div class="coding-section-heading">
+        <div><span class="coding-eyebrow">Your work</span><h2>Recent submissions</h2></div>
+    </div>
+    {% for submission in recent_submissions %}
+        <a class="coding-history-row" href="{% url 'coding_submission_result' submission_id=submission.pk %}">
+            <span class="history-language">{{ submission.language|upper }}</span>
+            <span class="history-problem">{{ submission.problem.title }} <small>{{ submission.problem.topic.name }}</small></span>
+            <span class="history-status">{{ submission.get_status_display }}</span>
+            <time>{{ submission.created_at|date:"M j, Y H:i" }}</time>
+        </a>
+    {% empty %}
+        <div class="coding-history-empty">Your submitted solutions will appear here.</div>
+    {% endfor %}
+</section>
+{% endblock %}

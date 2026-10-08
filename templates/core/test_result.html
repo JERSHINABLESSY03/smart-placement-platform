@@ -1,0 +1,85 @@
+{% extends "core/base.html" %}
+{% block title %}{{ attempt.test.title }} results{% endblock %}
+{% block content %}
+<section class="test-result-hero {% if attempt.status == 'expired' %}is-expired{% endif %}">
+    <span class="assessment-eyebrow">{% if attempt.status == "expired" %}Time expired{% else %}Assessment complete{% endif %}</span>
+    <h1>{{ attempt.test.title }}</h1>
+    <p>{% if attempt.status == "expired" %}Your saved answers were submitted automatically when time ran out.{% else %}Your assessment has been scored from the saved answer records.{% endif %}</p>
+    <div class="test-score-display"><strong>{{ attempt.score }}</strong><span>/ {{ attempt.total_marks }} marks</span></div>
+</section>
+
+<section class="test-result-stats">
+    <div><span>Correct</span><strong>{{ attempt.correct_count }}</strong></div>
+    <div><span>Wrong</span><strong>{{ attempt.wrong_count }}</strong></div>
+    <div><span>Skipped</span><strong>{{ attempt.skipped_count }}</strong></div>
+    <div><span>Accuracy</span><strong>{{ attempt.accuracy|floatformat:1 }}%</strong></div>
+    <div><span>Time taken</span><strong>{{ attempt.time_taken_seconds|floatformat:0 }} sec</strong></div>
+</section>
+
+<div class="row g-4 mt-1">
+    <div class="col-xl-6">
+        <section class="test-result-panel h-100">
+            <div class="assessment-section-heading">
+                <div><span class="assessment-eyebrow">By category</span><h2>Category performance</h2></div>
+            </div>
+            {% for item in performance.categories %}
+                <div class="performance-row">
+                    <div class="d-flex justify-content-between"><strong>{{ item.name }}</strong><span>{{ item.accuracy }}% accuracy</span></div>
+                    <div class="performance-bar"><span style="width: {{ item.accuracy }}%;"></span></div>
+                    <small>{{ item.correct }} correct of {{ item.answered }} answered · {{ item.marks }}/{{ item.possible_marks }} marks</small>
+                </div>
+            {% empty %}
+                <p class="text-muted">No category data.</p>
+            {% endfor %}
+        </section>
+    </div>
+    <div class="col-xl-6">
+        <section class="test-result-panel h-100">
+            <div class="assessment-section-heading">
+                <div><span class="assessment-eyebrow">By topic</span><h2>Topic performance</h2></div>
+            </div>
+            {% for item in performance.topics %}
+                <div class="performance-row">
+                    <div class="d-flex justify-content-between"><strong>{{ item.name }}</strong><span>{{ item.accuracy }}% accuracy</span></div>
+                    <div class="performance-bar"><span style="width: {{ item.accuracy }}%;"></span></div>
+                    <small>{{ item.correct }} correct of {{ item.answered }} answered · {{ item.marks }}/{{ item.possible_marks }} marks</small>
+                </div>
+            {% empty %}
+                <p class="text-muted">No topic data.</p>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+
+<section class="test-result-panel mt-4">
+    <div class="assessment-section-heading">
+        <div><span class="assessment-eyebrow">Review answers</span><h2>Question-by-question</h2></div>
+    </div>
+    <div class="test-review-list">
+        {% for answer in answers %}
+            <article class="test-review-item">
+                <div class="test-review-heading">
+                    <strong>Q{{ answer.test_question.position }} · {{ answer.test_question.question.topic.name }}</strong>
+                    <span class="{% if answer.is_correct %}review-correct{% elif answer.selected_option %}review-wrong{% else %}review-skipped{% endif %}">
+                        {% if answer.is_correct %}Correct{% elif answer.selected_option %}Wrong{% else %}Skipped{% endif %}
+                        {% if answer.marked_for_review %} · Marked for review{% endif %}
+                    </span>
+                </div>
+                <p>{{ answer.test_question.question.question_text }}</p>
+                <div class="review-answer-lines">
+                    <span>Your answer: {% if answer.selected_option %}{{ answer.selected_option.label }}. {{ answer.selected_option.text }}{% else %}Not answered{% endif %}</span>
+                    {% if answer.correct_option %}
+                        <span>Correct answer: {{ answer.correct_option.label }}. {{ answer.correct_option.text }}</span>
+                    {% else %}
+                        {% for option in answer.test_question.question.options.all %}
+                            {% if option.is_correct %}<span>Correct answer: {{ option.label }}. {{ option.text }}</span>{% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    <small>{{ answer.test_question.question.explanation }}</small>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    <a href="{% url 'mock_tests' %}" class="btn btn-primary mt-3">Back to assessments</a>
+</section>
+{% endblock %}
