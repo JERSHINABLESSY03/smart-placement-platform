@@ -140,33 +140,6 @@
                 </div>
             </div>
 
-            <div class="col-lg-6">
-                <div class="panel-card h-100">
-                    <div class="panel-header">
-                        <div>
-                            <p class="eyebrow mb-1">Priority actions</p>
-                            <h3 class="panel-title mb-0">Recommended actions</h3>
-                        </div>
-                    </div>
-                    {% if recommended_actions %}
-                        <div class="action-list">
-                            {% for item in recommended_actions %}
-                                <a href="{{ item.url }}" class="action-item">
-                                    <div class="action-meta">
-                                        <span class="action-tag action-tag-{{ item.priority|lower }}">{{ item.priority }}</span>
-                                    </div>
-                                    <div>
-                                        <h6>{{ item.title }}</h6>
-                                        <p>{{ item.description }}</p>
-                                    </div>
-                                </a>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        {% include "core/partials/empty_state.html" with title="No recommendations yet" description="Keep learning and your next best action will appear here." %}
-                    {% endif %}
-                </div>
-            </div>
         </section>
 
         <section class="row g-4">
@@ -231,5 +204,6 @@
             </div>
         </section>
     {% endif %}
+    {% include "core/partials/recommendations.html" with recommendation_data=recommendation_data %}
 </div>
 {% endblock %}

@@ -36,6 +36,7 @@ from .models import (
 from .services.analytics_service import get_performance_analytics
 from .services.dashboard_service import get_dashboard_summary
 from .services.gemini_service import GeminiService, GeminiServiceError
+from .services.recommendation_service import get_recommendations
 
 
 class HealthCheckTests(TestCase):
@@ -1329,6 +1330,312 @@ class PerformanceAnalyticsTests(TestCase):
         self.assertEqual(page_response.status_code, 302)
         api_unauthenticated = self.client.get(reverse("analytics_api"))
         self.assertIn(api_unauthenticated.status_code, (401, 403))
+
+
+class RecommendationEngineTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username="recommendationstudent",
+            email="recommendation@example.com",
+            password="recommendation-password-123",
+        )
+        self.other_user = User.objects.create_user(
+            username="otherrecommendationstudent",
+            email="other-recommendation@example.com",
+            password="other-recommendation-password-123",
+        )
+        self.client.force_login(self.user)
+
+    def _topic(self, category_name, topic_name):
+        category = AptitudeCategory.objects.get_or_create(
+            name=category_name,
+            defaults={"slug": category_name.lower().replace(" ", "-")},
+        )[0]
+        topic = AptitudeTopic.objects.get_or_create(
+            category=category,
+            name=topic_name,
+            defaults={"slug": topic_name.lower().replace(" ", "-")},
+        )[0]
+        return category, topic
+
+    def _record_questions(self, user, category_name, topic_name, correct, total):
+        category, topic = self._topic(category_name, topic_name)
+        question = AptitudeQuestion.objects.create(
+            topic=topic,
+            question_text=f"{category_name} {topic_name} recommendation question",
+            explanation="Explanation.",
+        )
+        options = [
+            AptitudeQuestionOption.objects.create(
+                question=question,
+                position=position,
+                text=f"Recommendation option {position}",
+                is_correct=position == 1,
+            )
+            for position in (1, 2)
+        ]
+        for position in range(total):
+            is_correct = position < correct
+            AptitudeQuestionAttempt.objects.create(
+                user=user,
+                question=question,
+                selected_option=options[0] if is_correct else options[1],
+                is_correct=is_correct,
+            )
+        return category, topic
+
+    def _record_coding(self, user, total, solved):
+        topic = CodingTopic.objects.create(
+            name="Recommendation coding patterns",
+            slug=f"recommendation-coding-{user.pk}",
+        )
+        for index in range(total):
+            problem = CodingProblem.objects.create(
+                title=f"Recommendation coding problem {user.pk}-{index}",
+                slug=f"recommendation-coding-problem-{user.pk}-{index}",
+                topic=topic,
+                category="Basic Programming",
+                problem_statement="Solve this practice problem.",
+            )
+            CodingSubmission.objects.create(
+                user=user,
+                problem=problem,
+                language=CodingSubmission.Language.PYTHON,
+                source_code="print('submission')",
+                status=(
+                    CodingSubmission.Status.ACCEPTED
+                    if index < solved
+                    else CodingSubmission.Status.REJECTED
+                ),
+            )
+
+    def test_no_activity_returns_new_student_empty_state_without_percentages(self):
+        result = get_recommendations(self.user)
+
+        self.assertFalse(result["has_data"])
+        self.assertEqual(result["recommendations"], [])
+        self.assertIn("Complete a few practice questions", result["message"])
+
+        dashboard = self.client.get(reverse("dashboard"))
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertContains(dashboard, "Recommended for You")
+        self.assertContains(dashboard, result["message"])
+        self.assertNotContains(dashboard, "0.0% performance")
+
+    def test_weak_performance_is_high_priority_with_fifteen_questions(self):
+        self._record_questions(
+            self.user,
+            "Operating Systems",
+            "Process Scheduling",
+            correct=1,
+            total=4,
+        )
+
+        result = get_recommendations(self.user)
+        recommendation = result["recommendations"][0]
+
+        self.assertEqual(recommendation["name"], "Operating Systems")
+        self.assertEqual(recommendation["performance"], 25.0)
+        self.assertEqual(recommendation["priority"], "HIGH")
+        self.assertEqual(recommendation["practice_quantity"], 15)
+        self.assertEqual(recommendation["recommendation"], "Practice 15 Operating Systems questions")
+        self.assertEqual(recommendation["weak_topics"][0]["name"], "Process Scheduling")
+        self.assertEqual(
+            recommendation["weak_topics"][0]["url"],
+            reverse(
+                "aptitude_topic",
+                args=["operating-systems", "process-scheduling"],
+            ),
+        )
+
+    def test_medium_performance_gets_ten_question_recommendation(self):
+        self._record_questions(self.user, "DBMS", "Normalization", correct=3, total=5)
+
+        recommendation = next(
+            item
+            for item in get_recommendations(self.user)["recommendations"]
+            if item["name"] == "DBMS"
+        )
+
+        self.assertEqual(recommendation["performance"], 60.0)
+        self.assertEqual(recommendation["priority"], "MEDIUM")
+        self.assertEqual(recommendation["practice_quantity"], 10)
+        self.assertEqual(recommendation["recommendation"], "Practice 10 DBMS questions")
+
+    def test_strong_coding_performance_recommends_harder_problems(self):
+        self._record_coding(self.user, total=7, solved=6)
+
+        recommendation = next(
+            item
+            for item in get_recommendations(self.user)["recommendations"]
+            if item["name"] == "Coding"
+        )
+
+        self.assertEqual(recommendation["name"], "Coding")
+        self.assertEqual(recommendation["performance"], 85.7)
+        self.assertEqual(recommendation["priority"], "LOW")
+        self.assertEqual(recommendation["status"], "Strong area")
+        self.assertEqual(recommendation["recommendation"], "Try harder coding problems")
+        self.assertEqual(recommendation["url"], reverse("coding"))
+
+    def test_structured_performance_areas_are_included_only_when_recorded(self):
+        for category_name in (
+            "Quantitative Aptitude",
+            "DBMS",
+            "Operating Systems",
+            "Computer Networks",
+            "OOP",
+            "Data Structures",
+        ):
+            self._record_questions(
+                self.user,
+                category_name,
+                f"{category_name} foundations",
+                correct=1,
+                total=2,
+            )
+
+        recommendations = get_recommendations(self.user)["recommendations"]
+
+        self.assertEqual(
+            {item["name"] for item in recommendations if item["name"] != "Mock tests"},
+            {
+                "Aptitude",
+                "DBMS",
+                "Operating Systems",
+                "Computer Networks",
+                "OOP",
+                "Data Structures / Algorithms",
+            },
+        )
+        self.assertIn("Mock tests", {item["name"] for item in recommendations})
+
+    def test_recommendations_sort_by_priority_then_weakest_performance(self):
+        self._record_questions(
+            self.user,
+            "Operating Systems",
+            "Process Scheduling",
+            correct=1,
+            total=4,
+        )
+        self._record_questions(
+            self.user,
+            "Computer Networks",
+            "Routing",
+            correct=2,
+            total=5,
+        )
+        self._record_questions(self.user, "DBMS", "Normalization", correct=3, total=5)
+        self._record_coding(self.user, total=7, solved=6)
+
+        result = get_recommendations(self.user)
+
+        self.assertEqual(
+            [(item["name"], item["priority"], item["performance"]) for item in result["recommendations"]],
+            [
+                ("Operating Systems", "HIGH", 25.0),
+                ("Computer Networks", "HIGH", 40.0),
+                ("DBMS", "MEDIUM", 60.0),
+                ("Mock tests", "MEDIUM", None),
+                ("Coding", "LOW", 85.7),
+            ],
+        )
+
+    def test_topic_recommendations_prioritize_weakest_recorded_topic(self):
+        self._record_questions(
+            self.user,
+            "Operating Systems",
+            "Process Scheduling",
+            correct=0,
+            total=2,
+        )
+        self._record_questions(
+            self.user,
+            "Operating Systems",
+            "Deadlocks",
+            correct=1,
+            total=2,
+        )
+        self._record_questions(
+            self.user,
+            "Operating Systems",
+            "Memory Management",
+            correct=2,
+            total=3,
+        )
+
+        recommendation = get_recommendations(self.user)["recommendations"][0]
+
+        self.assertEqual(
+            [
+                (topic["name"], topic["performance"])
+                for topic in recommendation["weak_topics"]
+            ],
+            [
+                ("Process Scheduling", 0.0),
+                ("Deadlocks", 50.0),
+                ("Memory Management", 66.7),
+            ],
+        )
+
+    def test_recommendations_only_use_the_requested_users_records(self):
+        self._record_questions(
+            self.user,
+            "Operating Systems",
+            "Process Scheduling",
+            correct=0,
+            total=2,
+        )
+        self._record_questions(
+            self.other_user,
+            "DBMS",
+            "Normalization",
+            correct=5,
+            total=5,
+        )
+
+        own = get_recommendations(self.user)
+        other = get_recommendations(self.other_user)
+
+        self.assertEqual(
+            [item["name"] for item in own["recommendations"] if item["name"] != "Mock tests"],
+            ["Operating Systems"],
+        )
+        other_dbms = next(
+            item for item in other["recommendations"] if item["name"] == "DBMS"
+        )
+        self.assertEqual(other_dbms["performance"], 100.0)
+
+    def test_dashboard_and_analytics_render_the_same_rule_based_recommendations(self):
+        self._record_questions(
+            self.user,
+            "DBMS",
+            "Normalization",
+            correct=2,
+            total=5,
+        )
+
+        dashboard = self.client.get(reverse("dashboard"))
+        analytics = self.client.get(reverse("analytics"))
+
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertEqual(analytics.status_code, 200)
+        self.assertEqual(
+            dashboard.context["recommendation_data"]["recommendations"],
+            analytics.context["recommendation_data"]["recommendations"],
+        )
+        recommendation_text = dashboard.context["recommendation_data"]["recommendations"][0]["recommendation"]
+        self.assertContains(dashboard, recommendation_text)
+        self.assertContains(analytics, "Recommended for You")
+        self.assertContains(analytics, recommendation_text)
+        mock_test_recommendation = next(
+            item
+            for item in dashboard.context["recommendation_data"]["recommendations"]
+            if item["name"] == "Mock tests"
+        )
+        self.assertEqual(mock_test_recommendation["recommendation"], "Attempt a mock test")
+        self.assertEqual(mock_test_recommendation["url"], reverse("mock_tests"))
 
 
 class AIAssistantTests(TestCase):

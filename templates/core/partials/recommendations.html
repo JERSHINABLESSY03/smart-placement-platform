@@ -1,0 +1,47 @@
+<section class="panel-card mb-4" aria-labelledby="recommendations-title">
+    <div class="panel-header">
+        <div>
+            <p class="eyebrow mb-1">Personalized next steps</p>
+            <h3 class="panel-title mb-0" id="recommendations-title">Recommended for You</h3>
+        </div>
+    </div>
+    {% if recommendation_data.has_data %}
+        <div class="row g-3">
+            {% for item in recommendation_data.recommendations|slice:":3" %}
+                <div class="col-lg-4">
+                    <article class="h-100 rounded-3 border p-3">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <h4 class="h6 mb-0">{{ item.name }}</h4>
+                            <span class="badge {% if item.priority == 'HIGH' %}text-bg-danger{% elif item.priority == 'MEDIUM' %}text-bg-warning{% else %}text-bg-success{% endif %}">
+                                {{ item.priority }}{% if item.status == "Strong area" %} · STRONG{% endif %}
+                            </span>
+                        </div>
+                        {% if item.performance is not None %}
+                            <p class="mb-1"><strong>{{ item.performance|floatformat:1 }}%</strong> performance</p>
+                        {% else %}
+                            <p class="mb-1 text-muted">{{ item.status }}</p>
+                        {% endif %}
+                        <p class="text-muted small mb-2">{{ item.focus }}</p>
+                        <p class="small mb-3">{{ item.recommendation }}</p>
+                        {% if item.weak_topics %}
+                            <details class="small mb-3">
+                                <summary>Focus on these topics</summary>
+                                <ul class="mt-2 mb-0">
+                                    {% for topic in item.weak_topics %}
+                                        <li>
+                                            <a href="{{ topic.url }}">{{ topic.name }}</a>
+                                            — {{ topic.performance|floatformat:1 }}%
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </details>
+                        {% endif %}
+                        <a class="btn btn-primary btn-sm" href="{{ item.url }}">Practice now</a>
+                    </article>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">{{ recommendation_data.message }}</p>
+    {% endif %}
+</section>

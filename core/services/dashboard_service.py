@@ -11,6 +11,7 @@ from core.models import (
     TestAttempt,
 )
 from core.services.performance_metrics import get_performance_metrics, percentage
+from core.services.recommendation_service import get_recommendations
 
 SUBJECT_GROUPS = {
     "Aptitude": [
@@ -56,44 +57,6 @@ def _build_subject_scores(metrics: dict[str, Any]):
     return subject_scores
 
 
-def _build_recommendations(weakest_topic: str | None, metrics: dict[str, Any]):
-    recommendations = []
-
-    if weakest_topic:
-        recommendations.append({
-            "title": f"Focus on {weakest_topic}",
-            "description": f"This is your lowest current performance area. Review key concepts and complete a focused practice round.",
-            "priority": "High",
-            "url": "/practice/",
-        })
-
-    if metrics["coding_success_rate"] < 50:
-        recommendations.append({
-            "title": "Solve 2 coding problems",
-            "description": "Build confidence in your coding fundamentals with a quick problem-solving sprint.",
-            "priority": "Medium",
-            "url": "/coding/",
-        })
-
-    if metrics["tests_completed"] == 0:
-        recommendations.append({
-            "title": "Take a mock test",
-            "description": "A timed mock test will reveal your readiness and highlight weak sections for revision.",
-            "priority": "Medium",
-            "url": "/mock-tests/",
-        })
-
-    if not recommendations:
-        recommendations.append({
-            "title": "Continue streak momentum",
-            "description": "Keep your practice rhythm going and review your weakest topic for the next milestone.",
-            "priority": "Low",
-            "url": "/analytics/",
-        })
-
-    return recommendations[:3]
-
-
 def _build_current_streak(user: Any) -> int:
     activity_dates = set(
         StudentActivity.objects.filter(user=user)
@@ -128,10 +91,16 @@ def get_dashboard_summary(user: Any):
         weakest_topic = metrics["weak_topics"][0]
 
     subject_scores = _build_subject_scores(metrics)
-    recommended_actions = _build_recommendations(
-        weakest_topic["topic"] if weakest_topic else None,
-        metrics,
-    )
+    recommendation_data = get_recommendations(user, metrics=metrics)
+    recommended_actions = [
+        {
+            "title": item["recommendation"],
+            "description": item["focus"],
+            "priority": item["priority"].title(),
+            "url": item["url"],
+        }
+        for item in recommendation_data["recommendations"]
+    ]
     is_empty = not (
         metrics["questions_attempted"]
         or metrics["coding_problems_attempted"]
@@ -158,6 +127,7 @@ def get_dashboard_summary(user: Any):
         "strongest_topic": strongest_topic,
         "weakest_topic": weakest_topic,
         "recent_activity": recent_activity,
+        "recommendation_data": recommendation_data,
         "recommended_actions": recommended_actions,
         "is_empty": is_empty,
     }

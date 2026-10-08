@@ -55,6 +55,7 @@ from .services.coding_service import record_submission
 from .services.dashboard_service import get_dashboard_summary
 from .services.gemini_service import GeminiService, GeminiServiceError
 from .services.performance_metrics import get_performance_metrics
+from .services.recommendation_service import get_recommendations
 from .services.test_engine import (
     AttemptUnavailableError,
     TestUnavailableError,
@@ -739,10 +740,14 @@ def test_result(request, attempt_id):
 
 @login_required
 def analytics(request):
+    metrics = get_performance_metrics(request.user)
     return render(
         request,
         "core/analytics.html",
-        {"analytics": get_performance_analytics(request.user)},
+        {
+            "analytics": get_performance_analytics(request.user, metrics=metrics),
+            "recommendation_data": get_recommendations(request.user, metrics=metrics),
+        },
     )
 
 

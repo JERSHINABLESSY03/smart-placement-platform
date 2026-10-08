@@ -47,6 +47,36 @@
     </article>
 </section>
 
+<section class="analytics-panel mb-4">
+    <div class="analytics-panel-heading">
+        <div><span class="analytics-eyebrow">Personalized next steps</span><h2>Recommended for You</h2></div>
+        <a href="{% url 'dashboard' %}" class="analytics-link">Dashboard <i class="bi bi-arrow-right"></i></a>
+    </div>
+    {% if recommendation_data.has_data %}
+        <div class="row g-3">
+            {% for item in recommendation_data.recommendations|slice:":3" %}
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                            <strong>{{ item.name }}</strong>
+                            <span class="analytics-status">{{ item.priority }}</span>
+                        </div>
+                        {% if item.performance is not None %}
+                            <div class="mb-2"><strong>{{ item.performance|floatformat:1 }}%</strong> performance</div>
+                        {% else %}
+                            <div class="mb-2 analytics-muted">{{ item.status }}</div>
+                        {% endif %}
+                        <p class="analytics-muted">{{ item.recommendation }}</p>
+                        <a href="{{ item.url }}" class="analytics-link">Practice now <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="analytics-muted mb-0">{{ recommendation_data.message }}</p>
+    {% endif %}
+</section>
+
 <section class="analytics-chart-grid">
     <article class="analytics-panel weekly-chart-panel">
         <div class="analytics-panel-heading">

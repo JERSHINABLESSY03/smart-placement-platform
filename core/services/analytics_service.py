@@ -6,10 +6,11 @@ from core.models import MockTestAttempt, TestAttempt
 from core.services.performance_metrics import get_performance_metrics, percentage
 
 
-def get_performance_analytics(user, now=None):
+def get_performance_analytics(user, now=None, metrics=None):
     now = now or timezone.now()
     start_date = now.date() - timedelta(days=6)
-    metrics = get_performance_metrics(user)
+    if metrics is None:
+        metrics = get_performance_metrics(user)
     weekly_totals = {
         start_date + timedelta(days=offset): {"attempted": 0, "correct": 0, "tests": 0}
         for offset in range(7)

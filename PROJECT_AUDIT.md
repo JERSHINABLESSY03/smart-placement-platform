@@ -167,3 +167,24 @@ No `.git` directory was present at the project root during inspection. Therefore
 - Local database migration plan: `core.0011_ai_messages` pending at the time inspected.
 - Docker/cloud deployment: **not verified**; Docker CLI was unavailable in the inspection environment.
 - File changes during the audit: **none**.
+
+## Phase 10: Personalized recommendation engine
+
+The rule-based recommendation service is implemented in `core/services/recommendation_service.py` and consumes user-scoped data from `core/services/performance_metrics.py`. The canonical metrics service also exposes unique coding-problem breakdowns by stored category and topic; duplicate coding attempts/submissions do not inflate these rates.
+
+Recommendation bands are:
+
+- **0–49%:** HIGH priority / weak area; recommends 15 focused questions (or 10 coding problems).
+- **50–69%:** MEDIUM priority; recommends 10 focused questions.
+- **70–84%:** LOW priority / good progress; recommends 5 maintenance questions.
+- **85–100%:** LOW priority / strong area; suggests harder questions or coding problems.
+
+Recommendations are ordered by priority, then ascending recorded performance. Topic recommendations use recorded canonical topic accuracy, include weak topics below 70%, and use existing topic practice routes when a structured aptitude topic is available. Unsupported/unrecorded categories are omitted rather than assigned assumed scores. A student without category-level performance receives a no-data message.
+
+The dashboard displays a compact “Recommended for You” section; analytics reuses the same service for a compact summary. The recommendation logic is not implemented in either view or template. Added tests cover empty activity, weak/medium/strong performance, supported structured categories, sorting, weak-topic ordering, user separation, and dashboard/analytics presentation. Final phase verification is recorded below.
+
+### Phase 10 verification
+
+- Full test suite: **59 passed**.
+- Django system check: **no issues reported**.
+- Migration consistency check: **no changes detected; no migration required**.

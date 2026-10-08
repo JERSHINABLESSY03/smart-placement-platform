@@ -139,6 +139,67 @@ def get_performance_metrics(user):
     coding_problems_attempted = len(attempted_problem_ids)
     coding_problems_solved = len(solved_problem_ids)
     coding_success_rate = percentage(coding_problems_solved, coding_problems_attempted)
+    coding_category_problem_ids = defaultdict(lambda: {"attempted": set(), "solved": set()})
+    coding_topic_problem_ids = defaultdict(lambda: {"attempted": set(), "solved": set()})
+    coding_attempt_rows = list(
+        coding_attempts.values_list(
+            "problem_id",
+            "problem__category",
+            "problem__topic__name",
+            "passed",
+        )
+    )
+    coding_submission_rows = list(
+        coding_submissions.values_list(
+            "problem_id",
+            "problem__category",
+            "problem__topic__name",
+            "status",
+        )
+    )
+    for problem_id, category_name, topic_name, passed in coding_attempt_rows:
+        coding_category_problem_ids[category_name]["attempted"].add(problem_id)
+        coding_topic_problem_ids[(category_name, topic_name)]["attempted"].add(problem_id)
+        if passed:
+            coding_category_problem_ids[category_name]["solved"].add(problem_id)
+            coding_topic_problem_ids[(category_name, topic_name)]["solved"].add(problem_id)
+    for problem_id, category_name, topic_name, status in coding_submission_rows:
+        coding_category_problem_ids[category_name]["attempted"].add(problem_id)
+        coding_topic_problem_ids[(category_name, topic_name)]["attempted"].add(problem_id)
+        if status == CodingSubmission.Status.ACCEPTED:
+            coding_category_problem_ids[category_name]["solved"].add(problem_id)
+            coding_topic_problem_ids[(category_name, topic_name)]["solved"].add(problem_id)
+
+    def build_coding_breakdown(problem_groups, name_key):
+        breakdown = []
+        for name, problem_ids in problem_groups.items():
+            attempted = len(problem_ids["attempted"])
+            solved = len(problem_ids["solved"])
+            breakdown.append({
+                name_key: name,
+                "attempted": attempted,
+                "solved": solved,
+                "accuracy": percentage(solved, attempted),
+            })
+        return sorted(breakdown, key=lambda item: item[name_key].lower())
+
+    coding_categories = build_coding_breakdown(coding_category_problem_ids, "name")
+    coding_topics = [
+        {
+            "category": category_name,
+            "name": topic_name,
+            "attempted": len(problem_ids["attempted"]),
+            "solved": len(problem_ids["solved"]),
+            "accuracy": percentage(
+                len(problem_ids["solved"]),
+                len(problem_ids["attempted"]),
+            ),
+        }
+        for (category_name, topic_name), problem_ids in sorted(
+            coding_topic_problem_ids.items(),
+            key=lambda item: (item[0][0].lower(), item[0][1].lower()),
+        )
+    ]
 
     legacy_test_attempts = MockTestAttempt.objects.filter(user=user)
     tests_completed = legacy_test_attempts.count() + len(completed_attempts)
@@ -214,6 +275,8 @@ def get_performance_metrics(user):
         "coding_problems_attempted": coding_problems_attempted,
         "coding_problems_solved": coding_problems_solved,
         "coding_success_rate": coding_success_rate,
+        "coding_category_performance": coding_categories,
+        "coding_topic_performance": coding_topics,
         "tests_completed": tests_completed,
         "timed_test_average": timed_test_average,
         "overall_preparation_score": preparation_score,
